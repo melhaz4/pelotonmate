@@ -13,46 +13,13 @@ app.config.from_object(__name__)
 # Unless of course you choose to run templates and run it all out of here
 CORS(app, resources={r'/*': {'origins': '*'}})
 
-client = boto3.client('dynamodb')
+# create client
+ddb = boto3.resource('dynamodb', 
+                    endpoint_url='http://dynamodb:8000',
+                    region_name='dummy',
+                    aws_access_key_id='dummy',
+                    aws_secret_access_key='dummy')
 eastern = timezone('US/Eastern')
-
-"""
-Splash
-"""
-
-@app.route('/')
-def welcome():
-    return 'Welcome!'
-
-"""
-Login page to enter peloton credentials
-"""
-
-@app.route("/login/", methods=["GET", "POST"])
-def login_page():
-    if request.method == "POST":
-        user = request.form['username']
-        password = request.form['password']
-
-        data = '{"username_or_email":"' + user + '","password":"' + password + '"}'
-        
-        # Create the Peloton Connection
-        conn = PelotonConnection()
-        
-        # Connect and return the info to create the cookie
-        auth_response = conn.post("https://api.onepeloton.com/auth/login", data)
-        session_id = auth_response.get("session_id")
-        user_id = auth_response.get("user_id")
-
-        # Create the cookie
-        cookies = dict(peloton_session_id=session_id)
-
-        # Run this daily or set-up a cron to do it for you
-        conn.get_most_recent_ride_details(user_id, cookies, False)
-        conn.get_most_recent_ride_info(user_id, cookies, False)
-
-
-    return render_template("login.html")
 
 """
 Just a health-check to make sure we're properly deployed
@@ -73,7 +40,7 @@ This gets us our labels for the x-axis going from oldest to newest
 
 @app.route("/get_labels", methods=['GET'])
 def get_labels():
-    items = client.scan(
+    items = ddb.scan(
         TableName="peloton_ride_data"
     )
     averages = items.get("Items")
@@ -92,7 +59,7 @@ Felt that grabbing the heart-rate info on it's own return was useful for the one
 
 @app.route("/get_heart_rate", methods=['GET'])
 def get_heart_rate():
-    items = client.scan(
+    items = ddb.scan(
         TableName="peloton_ride_data"
     )
 
@@ -113,7 +80,7 @@ Generate the chart data for the average outputs of Output/Cadence/Resistance/Spe
 
 @app.route("/get_charts", methods=['GET'])
 def get_charts():
-    items = client.scan(
+    items = ddb.scan(
         TableName="peloton_ride_data"
     )
 
@@ -136,7 +103,7 @@ Pull back course data information to display in a table
 
 @app.route("/course_data")
 def get_course_data():
-    items = client.scan(
+    items = ddb.scan(
         TableName="peloton_course_data"
     )
     return_data = {}
@@ -158,7 +125,7 @@ def get_course_data():
 
 @app.route("/music_by_time/<ride_time>")
 def get_music_by_time(ride_time=None):
-    items = client.scan(
+    items = ddb.scan(
         TableName="peloton_music_sets"
     )
 

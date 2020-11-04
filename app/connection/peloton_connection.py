@@ -37,7 +37,7 @@ class PelotonConnection:
     If you've never run this before, you can just remove the [0] and make this a for loop
     and iterate over each one
     '''
-    def get_most_recent_ride_details(self, user_id=None, cookies=None, save=False):
+    def get_most_recent_ride_details(self, user_id=None, cookies=None, save=False, ddb=None):
         # Get the most recent workout ID
         workout_ids = PelotonConnection.__get_workouts__(self, user_id, cookies)
         for workout_id in workout_ids:
@@ -68,12 +68,15 @@ class PelotonConnection:
                     'name': average.get('display_name'),
                     'unit': average.get('display_unit'),
                     'value': average.get('value'),
+                    # 'distance': [f for f in performance_res.get("summaries")
+                    #              if f.get("display_name") == 'Distance'][0].get("value"),
                     'distance': [f for f in performance_res.get("summaries")
-                                 if f.get("display_name") == 'Distance'][0].get("value"),
-                    'heart_rate': heart_rate[0].get("average_value") if heart_rate is not None else None,
+                                 if f.get("display_name") == 'Distance'].get("value"),
+                    # 'heart_rate': heart_rate[0].get("average_value") if heart_rate is not None else None,
+                    'heart_rate': heart_rate.get("average_value") if heart_rate is not None else None,
                     'total_achievements': total_achievements,
-                    'miles_ridden': [f for f in performance_res.get("summaries") if f.get("display_name") == "Distance"][
-                        0].get("value")
+                    # 'miles_ridden': [f for f in performance_res.get("summaries") if f.get("display_name") == "Distance"][0].get("value")
+                    'miles_ridden': [f for f in performance_res.get("summaries") if f.get("display_name") == "Distance"].get("value")
                 }
                 results[average.get('display_name')] = result
 
@@ -84,14 +87,15 @@ class PelotonConnection:
                 "Avg Output": results.get("Avg Output"),
                 "Avg Resistance": results.get("Avg Resistance"),
                 "Avg Speed": results.get("Avg Speed"),
-                'heart_rate': heart_rate[0].get("average_value") if heart_rate is not None else None,
+                # 'heart_rate': heart_rate[0].get("average_value") if heart_rate is not None else None,
+                'heart_rate': heart_rate.get("average_value") if heart_rate is not None else None,
                 'total_achievements': total_achievements,
-                'miles_ridden': [f for f in performance_res.get("summaries") if f.get("display_name") == "Distance"][
-                    0].get("value"),
+                # 'miles_ridden': [f for f in performance_res.get("summaries") if f.get("display_name") == "Distance"][0].get("value"),
+                'miles_ridden': [f for f in performance_res.get("summaries") if f.get("display_name") == "Distance"].get("value"),
                 "ride_Id": str(created_at)
              }
 
-            table = boto3.resource('dynamodb').Table('peloton_ride_data')
+            table = ddb.Table('peloton_ride_data')
             # The info comes in as a float and Dynamo gets mad so just parse it out and make it a json obj
             ddb_data = json.loads(json.dumps(my_json_record), parse_float=Decimal)
             # Toss the json into Dynamo
@@ -106,7 +110,7 @@ class PelotonConnection:
     Similar to the get_most_recent_ride this will go and grab the most recent record
     Flip it out to a loop if you want to grab it all
     '''
-    def get_most_recent_ride_info(self, user_id=None, cookies=None, save=False):
+    def get_most_recent_ride_info(self, user_id=None, cookies=None, save=False, ddb=None):
         workout_ids = PelotonConnection.__get_workouts__(self, user_id, cookies)
         for workout_id in workout_ids:
             workout_url = f"https://api.onepeloton.com/api/workout/{workout_id}"
@@ -124,7 +128,7 @@ class PelotonConnection:
                 instructor = None
 
             if instructor is not None:
-                table = boto3.resource('dynamodb').Table('peloton_course_data')
+                table = ddb.Table('peloton_course_data')
                 if save is True:
                     table.put_item(
                         Item={
@@ -141,7 +145,7 @@ class PelotonConnection:
                 song_list = [song for song in ride_id_details.get("playlist").get("songs")]
                 set_list = [f"{f.get('title')} by {f.get('artists')[0].get('artist_name')}" for f in song_list]
 
-                table = boto3.resource('dynamodb').Table('peloton_music_sets')
+                table = boto3.client('dynamodb').Table('peloton_music_sets')
                 if save is True:
                     table.put_item(
                         Item={

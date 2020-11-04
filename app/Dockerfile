@@ -14,4 +14,6 @@ RUN pip install -r requirements.txt
 EXPOSE 5000
 COPY . .
 
-CMD ["database:8000", "flask", "run"]
+# RUN python test.py
+
+ CMD ["flask", "run"]
