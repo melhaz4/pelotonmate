@@ -1,13 +1,13 @@
 import boto3
 from connection.peloton_connection import PelotonConnection
 
-ddb = boto3.resource('dynamodb', 
+ddb = boto3.resource('dynamodb',
                     endpoint_url='http://dynamodb:8000',
                     region_name='dummy',
                     aws_access_key_id='dummy',
                     aws_secret_access_key='dummy')
 
-data = '{"username_or_email":"melhaz4@gmail.com","password":"charlotte12"}'
+data = '{"username_or_email":"dummy","password":"dummy"}'
 
 # Create the Peloton Connection
 conn = PelotonConnection()
