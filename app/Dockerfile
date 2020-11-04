@@ -7,9 +7,6 @@ COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
 # RUN cd /usr/local/bin
-# RUN aws configure set aws_access_key_id AKIA5EJP2JK2JRJ4TQMQ
-# RUN aws configure set aws_secret_access_key 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
-# RUN aws configure set default.region us-east-1
 
 EXPOSE 5000
 COPY . .
